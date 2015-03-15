@@ -160,10 +160,12 @@ def createPlayerPairs(completePlayerListSortedByRank, playersToBeAllocatedNewGam
             # opponent has already been allotted max number of games.
             if playersToBeAllocatedNewGamesMap[opponent] == 0:
                 eligibleOpponents.remove(opponent)
+                continue
         
             # They have already played recently    
             if recentMatchups != None and firstPlayer in recentMatchups.keys() and opponent in recentMatchups[firstPlayer]:                
                 eligibleOpponents.remove(opponent)
+                continue
         
         # Find opponents till no more games are to be allocated for this player
         while playersToBeAllocatedNewGamesMap[firstPlayer] != 0:                

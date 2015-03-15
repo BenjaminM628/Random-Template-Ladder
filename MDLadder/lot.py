@@ -17,6 +17,7 @@ class LOT(ndb.Model):
     playerRating = ndb.PickleProperty() #Dictionary of player IDs mapped to their TrueSkill rating
     playerMean = ndb.PickleProperty()
     playerStandardDeviation = ndb.PickleProperty() 
+    customProperties = ndb.PickleProperty() # Dictionary to store custom properties about the lot
 
     def hasEnded(self):
         return self.dateEnded is not None

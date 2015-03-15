@@ -10,16 +10,15 @@ import lot
 class JoinPage(BaseHandler):
     def get(self, lotID):
         if 'authenticatedtoken' not in self.session:
-            return self.redirect('http://' + wlnet + "/CLOT/Auth?p=5015900432&state=join/" + str(long(lotID)))
+            ############################################### SET TO main before going live ##################################
+            # main - 5015900432
+            # test - 314032996
+            return self.redirect('http://' + wlnet + "/CLOT/Auth?p=314032996&state=join/" + str(long(lotID)))
         
         container = lot.getLot(lotID)
         inviteToken = self.session['authenticatedtoken']
         
-        #Call the warlight API to get the name, color, and verify that the invite token is correct
-        apiret = hitapi('/API/ValidateInviteToken', { 'Token':  inviteToken })
-        
-        
-        templates = [604721,604722,604724,604729,609134,604733,604734,604737,604740,604741,604742,609139]
+        templates = [251301]
         templateIDs = ','.join(str(template) for template in templates)
         
         logging.info("current templates in use : " + templateIDs)
@@ -28,9 +27,6 @@ class JoinPage(BaseHandler):
         tempapiret = hitapi('/API/ValidateInviteToken', { 'Token':  inviteToken, 'TemplateIDs': templateIDs})
         
         logging.info('tempapi return value' + str(tempapiret))
-       
-        
-        logging.info("api return value = " + str(apiret))
         logging.info("invite token = " + inviteToken)
         
         if (not "tokenIsValid" in tempapiret) or ("CannotUseTemplate" in tempapiret):
@@ -40,11 +36,11 @@ class JoinPage(BaseHandler):
         player = Player.query(Player.inviteToken == inviteToken).get()
         
         
-        data = json.loads(apiret)
+        data = json.loads(tempapiret)
         currentColor = data['color']
         currentName = data['name']
         if player is None:
-            player = Player(inviteToken=inviteToken, name=currentName, color=currentColor)
+            player = Player(inviteToken=inviteToken, name=currentName, color=currentColor, customProperties = {}, numberOfGamesAtOnce=2)
             player.put()
             logging.info("Created player " + unicode(player))
         else:

@@ -13,5 +13,5 @@
 
 cron:
 - url: /cron
-  schedule: every 10 minutes  
+  schedule: every 3 hours  
 

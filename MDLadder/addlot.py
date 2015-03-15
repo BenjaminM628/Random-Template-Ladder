@@ -21,6 +21,7 @@ class AddLotPage(BaseHandler):
         newlot.playerRating = { } #empty dictionary
         newlot.playerMean = { } #empty dictionary
         newlot.playerStandardDeviation = { } #empty dictionary
+        newlot.customProperties = { } #empty dictionary
         newlot.put()
         lot.lotAddedOrRemoved()
         

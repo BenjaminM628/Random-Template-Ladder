@@ -48,7 +48,7 @@ class TestPage(BaseHandler):
             
             for z in range(numPlayers):
                 name = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(5))
-                p = Player(name=name, inviteToken=name, color="#0000FF")
+                p = Player(name=name, inviteToken=name, color="#0000FF", customProperties = {}, numberOfGamesAtOnce=2)
                 p.put()
                 container.lot.playersParticipating.append(p.key.id())
             

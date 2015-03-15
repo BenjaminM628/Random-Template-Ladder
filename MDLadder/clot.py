@@ -3,16 +3,17 @@ from main import flatten
 
 import ConfigParser
 import logging
-import random
+from random import choice, randrange
 import os.path
 from datetime import datetime
 from TrueSkill.trueskill import Rating, rate_1vs1
 import operator
+from itertools import islice
 
 
 #The template ID defines the settings used when the game is created.  You can create your own template on warlight.net and enter its ID here
 templates = [251301]
-timeBetweenGamesInMinutes = 120
+timeBetweenGamesInHours = 1
 InitialMean = 2000.0
 InitialStandardDeviation = 200.0
 
@@ -23,14 +24,14 @@ def createGames(request, container):
     Right now, this function just randomly pairs up players who aren't in a game."""
     
     # Read configuration settings for ladder
-    readConfigForRTLadder()
+    readConfigForMDLadder()
     
     #Recent games. All players who have played each other recently, will not be paired together.
     recentGames = []
     for g in container.games:
         delta = (datetime.now() - g.dateCreated)
         timeElapsed = delta.total_seconds()        
-        if int(timeElapsed) <  timeBetweenGamesInMinutes * 60:
+        if int(timeElapsed) <  timeBetweenGamesInHours * 60 * 60 :
             recentGames.append(g)
     
     #Retrieve all games that are ongoing
@@ -38,16 +39,35 @@ def createGames(request, container):
     activeGameIDs = dict([[g.key.id(), g] for g in activeGames])
     logging.info("Active games: " + unicode(activeGameIDs))
     
-    #Throw all of the player IDs that are in these ongoing games into a dictionary
-    playerIDsInActiveGames = set(flatten([g.players for g in activeGames]))
+    #Throw all of the player IDs that are in these ongoing games into a list
+    playerIDsInActiveGames = flatten([g.players for g in activeGames])
     
-    #Find all players who aren't any active games and also have not left the CLOT (isParticipating is true)
-    playersNotInGames = [container.players[p] for p in container.lot.playersParticipating if p not in playerIDsInActiveGames]
-    logging.info("Players not in games: " + ','.join([unicode(p) for p in playersNotInGames]))
+    # Map of {player:gameCount}
+    activeGameCountForPlayer = {}
+    for p in playerIDsInActiveGames:        
+        activeGameCountForPlayer[p] = activeGameCountForPlayer.get(p, 0) + 1
+    
+    # Map of {player:NumOfGamesToBeAllotted}     
+    playersToBeAllocatedNewGames = {}
+    for p in container.lot.playersParticipating:
+        player = container.players[p]
+        newGames = player.numberOfGamesAtOnce - activeGameCountForPlayer.get(p, 0)
+        playersToBeAllocatedNewGames[p] = newGames
+        
+    logging.info("Games to be allotted: " + str(playersToBeAllocatedNewGames))
     
     #Create a game for everyone not in a game.
     #From a list of templates, a random one is picked for each game
-    gamesCreated = [createGame(request, container, pair, int(random.choice(templates))) for pair in createPlayerPairs(container.lot.playerRanks, playersNotInGames, recentGames)]
+    gamesCreated = []
+    for pair in createPlayerPairs(container.lot.playerRanks, playersToBeAllocatedNewGames, recentGames):
+        chosenTemplateId = int(choice(templates))
+        overriddenBonuses = getOverriddenBonuses(chosenTemplateId)
+        players = [container.players[p] for p in pair]
+        g = createGame(request, container, players, chosenTemplateId, overriddenBonuses)
+        gamesCreated.append(g)
+        
+        logging.info("Overridden Bonuses for game " + unicode(g) + " : " + str(overriddenBonuses))
+        
     logging.info("Created games " + unicode(','.join([unicode(g) for g in gamesCreated])))
 
 
@@ -96,19 +116,20 @@ def setRanks(container):
 def gameFailedToStart(elapsed):
     """This is called for games that are in the lobby.  We should determine if the game failed to
     start or not based on how long it's been in the lobby"""
-    return elapsed.seconds >= 600
+    return elapsed.days >= 3
 
 
 """ This method creates pairs between players, so that games can be created for each pair.
-The algorithm creates pairs of the 2 lowest ranked players from the pool till no further pairs can be created.
-If there are odd number of players, the bottom ranked player will not get paired.
+For a player with rank r, the algorithm creates a pair randomly with another player between rank r-10 to r+10.
+It begins from rank 1, and picks a player till rank 10. It recurses till the bottom most rank looking at the next 10 players every time.
+Since a player got considered when the person 10 ranks above him was getting an opponent, r-10 to r+10 all are possible candidates.
 There is also a restriction that players who have played each other recently cannot play each other.
 """
-def createPlayerPairs(completePlayerListSortedByRank, EligibleForGamesplayerList, recentGames):
+def createPlayerPairs(completePlayerListSortedByRank, playersToBeAllocatedNewGamesMap, recentGames):
     eligiblePlayersSortedByRank = []
     for player in completePlayerListSortedByRank:
-        for p in EligibleForGamesplayerList:
-            if player == p.key.id():
+        for p in playersToBeAllocatedNewGamesMap.keys():
+            if player == p:
                 eligiblePlayersSortedByRank.append(p)
     
     # Dict containing each player as key, and list of players they have played as value
@@ -118,74 +139,78 @@ def createPlayerPairs(completePlayerListSortedByRank, EligibleForGamesplayerList
     for game in recentGames:
         p1 = game.players[0]
         p2 = game.players[1]
-        if p1 in recentMatchups.keys():
-            recentMatchups[p1].add(p2)
-        else:
-            recentMatchups[p1] = {p2}
-            
-        if p2 in recentMatchups.keys():
-            recentMatchups[p2].add(p1)
-        else:
-            recentMatchups[p2] = {p1}
+        
+        recentMatchups.setdefault(p1, set()).add(p2)
+        recentMatchups.setdefault(p2, set()).add(p1)
     
-    """ Groups the list of players into pairs.  For example, [1,2,3,4,5] would return [1,2],[3,4]
+    """ Groups the list of players into pairs.  
     However if the two players in a pair have played each other recently, then a different pair is formed"""
     numOfPlayers = len(eligiblePlayersSortedByRank)
-    
-    # Keeps track of players who have been allotted games
-    playersAllotedGames = []
     
     # Pairs of players to be returned
     playerPairs = []
     
     for i in range(1, numOfPlayers):
         firstPlayer = eligiblePlayersSortedByRank[i-1]
-        
-        # if player has been allotted a game already, move onto the next one.
-        if firstPlayer in playersAllotedGames:
-            continue
-        
-        # Find the next player who firstPlayer has not played recently. Add both of them to playersAllotedGames
-        # start from i+1(next player) till numberOfPlayers
-        for j in range (i+1, numOfPlayers+1):
-            secondPlayer = eligiblePlayersSortedByRank[j-1]
-            
-            if recentMatchups != None and firstPlayer.key.id() in recentMatchups.keys() and secondPlayer.key.id() in recentMatchups[firstPlayer.key.id()]:
-                # They have already played recently
-                continue
-            elif secondPlayer in playersAllotedGames:
-                # SecondPlayer has already been alloted a game with another eligible player
-                continue
-            else:
-                playersAllotedGames.append(firstPlayer)
-                playersAllotedGames.append(secondPlayer)
-                playerPairs.append([firstPlayer, secondPlayer])
-                break
 
+        # find possible opponents with a similar rank(currently 10 above or 10 below)
+        possibleOpponents = list(islice(eligiblePlayersSortedByRank, i, 10))
+        eligibleOpponents = list(possibleOpponents)
+        for opponent in possibleOpponents:
+            # opponent has already been allotted max number of games.
+            if playersToBeAllocatedNewGamesMap[opponent] == 0:
+                eligibleOpponents.remove(opponent)
+        
+            # They have already played recently    
+            if recentMatchups != None and firstPlayer in recentMatchups.keys() and opponent in recentMatchups[firstPlayer]:                
+                eligibleOpponents.remove(opponent)
+        
+        # Find opponents till no more games are to be allocated for this player
+        while playersToBeAllocatedNewGamesMap[firstPlayer] != 0:                
+            if len(eligibleOpponents) ==0:
+                # No suitable opponent found
+                break    
+            
+            # randomly pick the opponent 
+            secPlayer = choice(eligibleOpponents)
+            
+            playersToBeAllocatedNewGamesMap[firstPlayer] = playersToBeAllocatedNewGamesMap[firstPlayer] - 1
+            playersToBeAllocatedNewGamesMap[secPlayer] = playersToBeAllocatedNewGamesMap[secPlayer] - 1
+            
+            playerPairs.append([firstPlayer, secPlayer])
+            
+            # remove secPlayer as possible opponent for further game allocations
+            eligibleOpponents.remove(secPlayer)
+            
+            
+            # also add this to recent matchups
+            recentMatchups.setdefault(firstPlayer, set()).add(secPlayer)
+            recentMatchups.setdefault(secPlayer, set()).add(firstPlayer)          
+            
     return playerPairs
 
 
-"""Reads configuration for RT ladder"""
-def readConfigForRTLadder():
+"""Reads configuration for MD ladder"""
+def readConfigForMDLadder():
     cfgFile = os.path.dirname(__file__) + '/config/Ladder.cfg'
     Config = ConfigParser.ConfigParser()
     Config.read(cfgFile)
     
     # declare as global variables
     global templates
-    global timeBetweenGamesInMinutes
+    global timeBetweenGamesInHours
     global InitialMean
     global InitialStandardDeviation
     
     try:
-        allTemplates = Config.get("RTLadder", "templates")
-        delimiter = Config.get("RTLadder","delimiter")
+        allTemplates = Config.get("MDLadder", "templates")
+        delimiter = Config.get("MDLadder","delimiter")
         templates = allTemplates.split(delimiter)
-        timeBetweenGamesInMinutes = int(Config.get("RTLadder", "timeBetweenGamesInMinutes"))
-        InitialMean = float(Config.get("RTLadder", "initialMean"))
-        InitialStandardDeviation = float(Config.get("RTLadder", "initialStandardDeviation"))
+        timeBetweenGamesInHours = int(Config.get("MDLadder", "timeBetweenGamesInHours"))
+        InitialMean = float(Config.get("MDLadder", "initialMean"))
+        InitialStandardDeviation = float(Config.get("MDLadder", "initialStandardDeviation"))
     except:
-        raise Exception("Failed to load RT ladder config file")
+        raise Exception("Failed to load MD ladder config file")
 
 """ Given a mean and a standardDeviation, the rating is calculated as """
 def computeRating(mean, standardDeviation):
@@ -232,3 +257,28 @@ def updateRatingBasedOnRecentFinsihedGames(finishedGamesGroupedByWinner, contain
     container.lot.playerRating = ratingdict
     
     logging.info('Ratings updated based on game results')    
+    
+    
+def getOverriddenBonuses(templateId):
+    if templateId != 251301:
+        return None
+    
+    cfgFile = os.path.dirname(__file__) + '/config/BonusInfo/' + str(templateId) +'.values'
+    Config = ConfigParser.ConfigParser()
+    Config.optionxform = str   
+    Config.read(cfgFile)
+    
+    try:        
+        allBonuses = dict(Config.items('Bonuses'))
+        for region in allBonuses.keys():
+            bonusValue = int(allBonuses[region])
+            
+            # Set it to a new value of v-1 or v or v+1
+            allBonuses[region] = randrange(bonusValue-1, bonusValue+2)
+            logging.info(str(allBonuses[region])) 
+        
+        overriddenBonuses = [{'bonusName' : region, 'value' : bonusValue} for region, bonusValue in allBonuses.iteritems()]
+        logging.info(str(overriddenBonuses))    
+        return overriddenBonuses
+    except:
+        raise Exception("Failed to load bonus config file for the template : " + str(templateId))

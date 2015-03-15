@@ -56,9 +56,18 @@ def checkInProgressGames(container):
         elif state == 'WaitingForPlayers':
             #It's in the lobby still. Check if it's been too long.
             elapsed = datetime.datetime.now() - g.dateCreated
-            if not clot.gameFailedToStart(elapsed):
-                logging.info("Game " + str(g.wlnetGameID) + " is in the lobby for " + str(elapsed.days) + " days.")
-            else:
+            players = data.get('players', 'err')
+            if players == 'err' : raise Exception("GameFeed API failed.  Message = " + data.get('error', apiret))
+            
+            hasEitherPlayerDeclined = False
+            for p in players:
+                playerState = p.get('state', 'err')
+                if playerState =='err' : raise Exception("GameFeed API failed.  Message = " + data.get('error', apiret)) 
+                if playerState == 'Declined':
+                    hasEitherPlayerDeclined = True
+                    break
+            
+            if clot.gameFailedToStart(elapsed) or hasEitherPlayerDeclined == True:
                 logging.info('Game ' + str(g.wlnetGameID) + " is stuck in the lobby. Marking it as a loss for anyone who didn't join and deleting it.")
             
                 #Delete it over at warlight.net so that players know we no longer consider it a real game
@@ -81,7 +90,9 @@ def checkInProgressGames(container):
                     for playerID in [getPlayerByInviteToken(container, p['id']).key.id() for p in data['players'] if p['state'] != 'Playing']:
                         if playerID in container.lot.playersParticipating:
                             container.lot.playersParticipating.remove(playerID)
-                            logging.info("Removed " + str(playerID) + " from ladder since they did not join game " + str(g.wlnetGameID))        
+                            logging.info("Removed " + str(playerID) + " from ladder since they did not join game " + str(g.wlnetGameID))    
+            else :
+                logging.info("Game " + str(g.wlnetGameID) + " is in the lobby for " + str(elapsed.days) + " days.")    
         else:
             #It's still going.
             logging.info('Game ' + str(g.wlnetGameID) + ' is not finished, state=' + state + ', numTurns=' + data['numberOfTurns'])

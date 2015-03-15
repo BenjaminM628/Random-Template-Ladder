@@ -40,7 +40,7 @@ class JoinPage(BaseHandler):
         currentColor = data['color']
         currentName = data['name']
         if player is None:
-            player = Player(inviteToken=inviteToken, name=currentName, color=currentColor, customProperties = {}, numberOfGamesAtOnce=2)
+            player = Player(inviteToken=inviteToken, name=currentName, color=currentColor, customProperties = {}, numberOfGamesAtOnce=5)
             player.put()
             logging.info("Created player " + unicode(player))
         else:

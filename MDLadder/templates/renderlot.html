@@ -82,20 +82,20 @@
 			                    </tr>
 			                </thead>
 							<tbody id="myTable">
-			                {%for game in container.games|sort(attribute='dateCreated', reverse=True)%}    
+			                {%for game in container.games|sort(attribute='dateCreated', reverse=True)%}  
+			                {%if game.winner is not none%}  
 			                <tr>
 			                    <td>
 			                        <a href="http://warlight.net/MultiPlayer?GameID={{ game.wlnetGameID}}">{{ container.players[game.players[0]].name|escape }} vs {{ container.players[game.players[1]].name|escape }}</a>
 			                    </td>
-			                    <td>
-			                        {%if game.winner is not none%}
-			                        {{ container.players[game.winner].name|escape }}
-			                        {%endif%}
+			                    <td>			                        
+			                        {{ container.players[game.winner].name|escape }}			                        
 			                    </td>
 			                    <td>
 			                    	{{ game.dateCreated.strftime('%Y-%m-%d %H:%M') }}
 			                    </td>
 			                </tr>
+			                {%endif%}
 			                {%endfor%}
 							</tbody>
 			            </table>

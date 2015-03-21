@@ -51,6 +51,12 @@ class LOTContainer():
         memcache.delete('lot_' + str(self.lot.key.id()), 5)
         for game in self.games:
             memcache.delete(str(game.key.id()), 5)
+        
+            
+    def getFinishedGames(self):
+        if self.games == None:
+            return []
+        return [game for game in self.games if game.dateEnded != None ]
 
 
 def lotAddedOrRemoved():

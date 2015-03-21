@@ -154,7 +154,8 @@ def createPlayerPairs(completePlayerListSortedByRank, playersToBeAllocatedNewGam
         firstPlayer = eligiblePlayersSortedByRank[i-1]
 
         # find possible opponents with a similar rank(currently 10 above or 10 below)
-        possibleOpponents = list(islice(eligiblePlayersSortedByRank, i, 10))
+        start = max(0, i-10)
+        possibleOpponents = list(islice(eligiblePlayersSortedByRank, start, i+10))
         eligibleOpponents = list(possibleOpponents)
         for opponent in possibleOpponents:
             # opponent has already been allotted max number of games.

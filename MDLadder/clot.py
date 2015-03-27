@@ -156,6 +156,10 @@ def createPlayerPairs(completePlayerListSortedByRank, playersToBeAllocatedNewGam
         # find possible opponents with a similar rank(currently 10 above or 10 below)
         start = max(0, i-10)
         possibleOpponents = list(islice(eligiblePlayersSortedByRank, start, i+10))
+        
+        # player cannot play himself
+        possibleOpponents.remove(firstPlayer)
+        
         eligibleOpponents = list(possibleOpponents)
         for opponent in possibleOpponents:
             # opponent has already been allotted max number of games.
@@ -188,7 +192,7 @@ def createPlayerPairs(completePlayerListSortedByRank, playersToBeAllocatedNewGam
             
             # also add this to recent matchups
             recentMatchups.setdefault(firstPlayer, set()).add(secPlayer)
-            recentMatchups.setdefault(secPlayer, set()).add(firstPlayer)          
+            recentMatchups.setdefault(secPlayer, set()).add(firstPlayer)
             
     return playerPairs
 
@@ -278,7 +282,6 @@ def getOverriddenBonuses(templateId):
             
             # Set it to a new value of v-1 or v or v+1
             allBonuses[region] = randrange(bonusValue-1, bonusValue+2)
-            logging.info(str(allBonuses[region])) 
         
         overriddenBonuses = [{'bonusName' : region, 'value' : bonusValue} for region, bonusValue in allBonuses.iteritems()]
         logging.info(str(overriddenBonuses))    

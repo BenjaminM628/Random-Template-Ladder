@@ -12,7 +12,7 @@ from itertools import islice
 
 
 #The template ID defines the settings used when the game is created.  You can create your own template on warlight.net and enter its ID here
-templates = [251301]
+templates = [620619]
 timeBetweenGamesInHours = 1
 InitialMean = 2000.0
 InitialStandardDeviation = 200.0
@@ -267,7 +267,7 @@ def updateRatingBasedOnRecentFinsihedGames(finishedGamesGroupedByWinner, contain
     
     
 def getOverriddenBonuses(templateId):
-    if templateId != 251301:
+    if templateId != 620619:
         return None
     
     cfgFile = os.path.dirname(__file__) + '/config/BonusInfo/' + str(templateId) +'.values'

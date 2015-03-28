@@ -31,12 +31,14 @@ class TestPage(BaseHandler):
         if 'ClearData' in self.request.POST:
             #User clicked Clear Data, delete all games and players
             ndb.delete_multi([o.key for o in Game.query(Game.lotID == container.lot.key.id())])
-            container.lot.playersParticipating = []
             container.lot.playerRanks = []
+            container.lot.playerRating = {}
+            container.lot.playerMean = {}
+            container.lot.playerStandardDeviation = {}
             container.lot.put()
             container.changed()
             memcache.flush_all()
-            TestPage.renderPage(self, lotID, 'Deleted all games and players')        
+            TestPage.renderPage(self, lotID, 'Deleted all games')        
         elif 'RunCron' in self.request.POST:
             #Just execute the same thing that we'd do if we hit /cron, but also time it
             start = datetime.now()

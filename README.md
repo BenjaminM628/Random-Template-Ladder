@@ -1,4 +1,4 @@
-# RTLadder
+# MDLadder
 
 For more info on CLOT:
 http://wiki.warlight.net/index.php/CLOT 

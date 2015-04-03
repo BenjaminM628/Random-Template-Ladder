@@ -52,6 +52,8 @@ def createGames(request, container):
     for p in container.lot.playersParticipating:
         player = container.players[p]
         newGames = player.numberOfGamesAtOnce - activeGameCountForPlayer.get(p, 0)
+        if newGames < 0 :
+            newGames = 0
         playersToBeAllocatedNewGames[p] = newGames
         
     logging.info("Games to be allotted: " + str(playersToBeAllocatedNewGames))
@@ -65,8 +67,6 @@ def createGames(request, container):
         players = [container.players[p] for p in pair]
         g = createGame(request, container, players, chosenTemplateId, overriddenBonuses)
         gamesCreated.append(g)
-        
-        logging.info("Overridden Bonuses for game " + unicode(g) + " : " + str(overriddenBonuses))
         
     logging.info("Created games " + unicode(','.join([unicode(g) for g in gamesCreated])))
 

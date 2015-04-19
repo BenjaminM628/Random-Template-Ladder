@@ -29,7 +29,7 @@ def createGames(request, container):
     #Recent games. All players who have played each other recently, will not be paired together.
     recentGames = []
     for g in container.games:
-        delta = (datetime.now() - g.dateCreated)
+        delta = (datetime.now() - g.dateEnded)
         timeElapsed = delta.total_seconds()        
         if int(timeElapsed) <  timeBetweenGamesInHours * 60 * 60 :
             recentGames.append(g)

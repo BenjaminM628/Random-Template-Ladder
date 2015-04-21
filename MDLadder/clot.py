@@ -26,16 +26,21 @@ def createGames(request, container):
     # Read configuration settings for ladder
     readConfigForMDLadder()
     
-    #Recent games. All players who have played each other recently, will not be paired together.
+    #Recent games. All players who have played each other recently, will not be paired together. 
     recentGames = []
+    #Active games also count as recent.
+    activeGames = []
     for g in container.games:
-        delta = (datetime.now() - g.dateEnded)
-        timeElapsed = delta.total_seconds()        
-        if int(timeElapsed) <  timeBetweenGamesInHours * 60 * 60 :
+        if g.dateEnded is None:
             recentGames.append(g)
+            activeGames.append(g)
+        else:
+            delta = (datetime.now() - g.dateEnded)
+            timeElapsed = delta.total_seconds()        
+            if int(timeElapsed) <  timeBetweenGamesInHours * 60 * 60 :
+                recentGames.append(g)
     
-    #Retrieve all games that are ongoing
-    activeGames = [g for g in container.games if g.winner is None]
+    #Retrieve player pairs from all games that are ongoing
     activeGameIDs = dict([[g.key.id(), g] for g in activeGames])
     logging.info("Active games: " + unicode(activeGameIDs))
     

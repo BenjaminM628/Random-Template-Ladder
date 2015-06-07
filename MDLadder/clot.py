@@ -13,7 +13,7 @@ from itertools import islice
 
 #The template ID defines the settings used when the game is created.  You can create your own template on warlight.net and enter its ID here
 templates = [620619]
-timeBetweenGamesInHours = 1
+timeBetweenGamesInHours = 240
 InitialMean = 2000.0
 InitialStandardDeviation = 200.0
 

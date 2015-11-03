@@ -18,7 +18,7 @@ class JoinPage(BaseHandler):
         container = lot.getLot(lotID)
         inviteToken = self.session['authenticatedtoken']
         
-        templates = [620619]
+        templates = [655094]
         templateIDs = ','.join(str(template) for template in templates)
         
         logging.info("current templates in use : " + templateIDs)

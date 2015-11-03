@@ -12,6 +12,6 @@
 #the same games over and over every 10 minutes for hours on end unnecessarilly
 
 cron:
-- url: /cron
+- url: /abacus
   schedule: every 3 hours  
 

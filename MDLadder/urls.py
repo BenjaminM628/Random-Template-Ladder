@@ -26,7 +26,7 @@ application = webapp2.WSGIApplication([
     ('/join/(\d+)', JoinPage),
     ('/leave/(\d+)', LeavePage),
     ('/player/playerId=(\d+)&&lotId=(\d+)', PlayerPage),
-    ('/cron', CronPage),
+    ('/abacus', CronPage),
     ('/test/(\d+)', TestPage),
     ('/addlot', AddLotPage),
     ('/lot/(\d+)', ViewLotPage),

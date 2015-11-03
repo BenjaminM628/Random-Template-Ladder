@@ -13,7 +13,7 @@ class JoinPage(BaseHandler):
             ############################################### SET TO main before going live ##################################
             # main - 5015900432
             # test - 314032996
-            return self.redirect('http://' + wlnet + "/CLOT/Auth?p=314032996&state=join/" + str(long(lotID)))
+            return self.redirect('http://' + wlnet + "/CLOT/Auth?p=3022124041&state=join/" + str(long(lotID)))
         
         container = lot.getLot(lotID)
         inviteToken = self.session['authenticatedtoken']

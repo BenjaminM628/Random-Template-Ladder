@@ -12,7 +12,7 @@ from itertools import islice
 
 
 #The template ID defines the settings used when the game is created.  You can create your own template on warlight.net and enter its ID here
-templates = [655094]
+templates = [681478, 772345, 686992, 681390, 761200, 772344, 728645, 700272, 742004, 772346, 582955, 723530, 734876, 771770]
 timeBetweenGamesInHours = 240
 InitialMean = 2000.0
 InitialStandardDeviation = 200.0
@@ -269,27 +269,4 @@ def updateRatingBasedOnRecentFinsihedGames(finishedGamesGroupedByWinner, contain
     container.lot.playerRating = ratingdict
     
     logging.info('Ratings updated based on game results')    
-    
-    
-def getOverriddenBonuses(templateId):
-    if templateId != 620619:
-        return None
-    
-    cfgFile = os.path.dirname(__file__) + '/config/BonusInfo/' + str(templateId) +'.values'
-    Config = ConfigParser.ConfigParser()
-    Config.optionxform = str   
-    Config.read(cfgFile)
-    
-    try:        
-        allBonuses = dict(Config.items('Bonuses'))
-        for region in allBonuses.keys():
-            bonusValue = int(allBonuses[region])
-            
-            # Set it to a new value of v-1 or v or v+1
-            allBonuses[region] = randrange(bonusValue-1, bonusValue+2)
-        
-        overriddenBonuses = [{'bonusName' : region, 'value' : bonusValue} for region, bonusValue in allBonuses.iteritems()]
-        logging.info(str(overriddenBonuses))    
-        return overriddenBonuses
-    except:
-        raise Exception("Failed to load bonus config file for the template : " + str(templateId))
+

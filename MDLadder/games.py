@@ -29,7 +29,7 @@ def createGame(request, container, players, templateID, overriddenBonuses=None):
         overriddenBonuses = []
     
     """This calls the WarLight.net API to create a game, and then creates the Game rows in the local DB"""
-    gameName = 'Old 1v1 ladder | ' +  ' vs '.join([p.name for p in players])
+    gameName = 'Random 1v1 Ladder | ' +  ' vs '.join([p.name for p in players])
     gameName = gameName[:40] + "..."
     
     config = getClotConfig()
